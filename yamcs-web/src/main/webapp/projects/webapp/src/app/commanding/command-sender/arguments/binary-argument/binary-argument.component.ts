@@ -4,7 +4,6 @@ import { ArgumentType, utils, validators, WebappSdkModule } from '@yamcs/webapp-
 import { Subscription } from 'rxjs';
 
 @Component({
-  standalone: true,
   selector: 'app-binary-argument',
   templateUrl: './binary-argument.component.html',
   styleUrls: ['../arguments.css', './binary-argument.component.css'],
@@ -61,7 +60,7 @@ export class BinaryArgumentComponent implements ControlValueAccessor, OnInit, Va
       this.controlName = String(this.index);
     }
 
-    if (this.type.minBytes !== 0) {
+    if (this.type.minBytes !== undefined && this.type.minBytes !== 0) {
       this.validators.push(Validators.required);
     }
     this.validators.push(validators.requireHex);

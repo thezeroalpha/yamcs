@@ -62,6 +62,9 @@ import { YaSearchFilter2 } from './components/search-filter2/search-filter2.comp
 import { YaSelect } from './components/select/select.component';
 import { YaSidebarNavGroup } from './components/sidebar/sidebar-nav-group.component';
 import { YaSidebarNavItem } from './components/sidebar/sidebar-nav-item.component';
+import { YaStepperStepActions } from './components/stepper/stepper-step-actions.component';
+import { YaStepperStep } from './components/stepper/stepper-step.component';
+import { YaStepper } from './components/stepper/stepper.component';
 import { YaTableToggle } from './components/table-toggle/table-toggle.component';
 import { YaTableTop } from './components/table-top/table-top.component';
 import { YaTagSelect } from './components/tag-select/tag-select.component';
@@ -75,6 +78,7 @@ import { DataTableDirective } from './directives/data-table.directive';
 import { SimpleTableDirective } from './directives/simple-table.directive';
 import { TableDirective } from './directives/table.directive';
 
+import { YaColorInput } from '../public-api';
 import { YaActionLogSummary } from './components/action-log-summary/action-log-summary.component';
 import { AliasPipe } from './pipes/alias.pipe';
 import { ArrayContainsPipe } from './pipes/array-contains.pipe';
@@ -160,6 +164,7 @@ const sharedComponents = [
   YaBreadcrumb,
   YaBreadcrumbTrail,
   YaButton,
+  YaColorInput,
   YaColumnChooser,
   YaDateTimeInput,
   YaDetailPane,
@@ -195,6 +200,9 @@ const sharedComponents = [
   YaSelect,
   YaSidebarNavGroup,
   YaSidebarNavItem,
+  YaStepper,
+  YaStepperStep,
+  YaStepperStepActions,
   YaTableToggle,
   YaTableTop,
   YaTagSelect,

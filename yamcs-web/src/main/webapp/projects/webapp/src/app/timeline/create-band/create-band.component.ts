@@ -6,7 +6,6 @@ import { InstanceToolbarComponent } from '../../shared/instance-toolbar/instance
 import { CreateBandWizardStepComponent } from '../create-band-wizard-step/create-band-wizard-step.component';
 
 @Component({
-  standalone: true,
   templateUrl: './create-band.component.html',
   styleUrl: './create-band.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -23,6 +22,6 @@ export class CreateBandComponent {
     title: Title,
     readonly yamcs: YamcsService,
   ) {
-    title.setTitle('Create a Band');
+    title.setTitle('Create a band');
   }
 }

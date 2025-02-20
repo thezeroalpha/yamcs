@@ -2,7 +2,6 @@ import { ChangeDetectionStrategy, Component, ElementRef, forwardRef, ViewChild }
 import { ControlValueAccessor, NG_VALIDATORS, NG_VALUE_ACCESSOR, UntypedFormControl, Validator } from '@angular/forms';
 
 @Component({
-  standalone: true,
   selector: 'ya-hex-integer-input',
   templateUrl: './hex-integer-input.component.html',
   styleUrl: './hex-integer-input.component.css',
@@ -17,7 +16,7 @@ import { ControlValueAccessor, NG_VALIDATORS, NG_VALUE_ACCESSOR, UntypedFormCont
       useExisting: forwardRef(() => YaHexIntegerInput),
       multi: true,
     },
-  ]
+  ],
 })
 export class YaHexIntegerInput implements ControlValueAccessor, Validator {
 

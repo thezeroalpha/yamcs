@@ -18,11 +18,13 @@ import org.yamcs.http.api.AbstractPaginatedParameterRetrievalConsumer.PaginatedS
 import org.yamcs.http.api.Downsampler.Sample;
 import org.yamcs.http.api.ParameterRanger.Range;
 import org.yamcs.logging.Log;
+import org.yamcs.mdb.Mdb;
 import org.yamcs.mdb.MdbFactory;
 import org.yamcs.parameter.ParameterRetrievalOptions;
 import org.yamcs.parameter.ParameterRetrievalService;
 import org.yamcs.parameter.ParameterValueWithId;
 import org.yamcs.parameter.ParameterWithId;
+import org.yamcs.parameterarchive.BackFiller;
 import org.yamcs.parameterarchive.BackFillerListener;
 import org.yamcs.parameterarchive.ParameterArchive;
 import org.yamcs.parameterarchive.ParameterGroupIdDb;
@@ -37,6 +39,8 @@ import org.yamcs.protobuf.ArchivedParameterGroupResponse;
 import org.yamcs.protobuf.ArchivedParameterInfo;
 import org.yamcs.protobuf.ArchivedParameterSegmentsResponse;
 import org.yamcs.protobuf.ArchivedParametersInfoResponse;
+import org.yamcs.protobuf.DisableBackfillingRequest;
+import org.yamcs.protobuf.EnableBackfillingRequest;
 import org.yamcs.protobuf.GetArchivedParameterGroupRequest;
 import org.yamcs.protobuf.GetArchivedParameterSegmentsRequest;
 import org.yamcs.protobuf.GetArchivedParametersInfoRequest;
@@ -53,7 +57,6 @@ import org.yamcs.utils.IntArray;
 import org.yamcs.utils.SortedIntArray;
 import org.yamcs.utils.TimeEncoding;
 import org.yamcs.utils.ValueUtility;
-import org.yamcs.mdb.Mdb;
 
 import com.google.protobuf.Empty;
 
@@ -138,7 +141,6 @@ public class ParameterArchiveApi extends AbstractParameterArchiveApi<Context> {
     public void getParameterSamples(Context ctx, GetParameterSamplesRequest request,
             Observer<TimeSeries> observer) {
 
-
         YamcsServerInstance ysi = InstancesApi.verifyInstanceObj(request.getInstance());
 
         Mdb mdb = MdbFactory.getInstance(ysi.getName());
@@ -184,15 +186,11 @@ public class ParameterArchiveApi extends AbstractParameterArchiveApi<Context> {
                 .build();
         prs.retrieveScalar(pid, opts, sampler)
                 .thenRun(() -> {
-
                     TimeSeries.Builder series = TimeSeries.newBuilder();
                     for (Sample s : sampler.collect()) {
                         series.addSample(StreamArchiveApi.toGPBSample(s));
                     }
-
                     observer.complete(series.build());
-
-                    prs.retrieveScalar(pid, opts, sampler);
                 })
                 .exceptionally(e -> {
                     log.warn("Received exception during parameter retrieval", e);
@@ -231,7 +229,6 @@ public class ParameterArchiveApi extends AbstractParameterArchiveApi<Context> {
                 .withStartStop(start, stop)
                 .withRetrieveRawValues(false)
                 .withoutRealtime(request.getNorealtime())
-                // .withNoreplay(false)// TODO
                 .build();
 
         prs.retrieveScalar(pid, opts, ranger)
@@ -289,6 +286,9 @@ public class ParameterArchiveApi extends AbstractParameterArchiveApi<Context> {
                     .withoutParchive(true)
                     .withoutReplay(false);
         } else {
+            if (request.hasNoreplay()) {
+                optsb = optsb.withoutReplay(request.getNoreplay());
+            }
             optsb = optsb.withoutRealtime(request.getNorealtime());
         }
 
@@ -359,10 +359,13 @@ public class ParameterArchiveApi extends AbstractParameterArchiveApi<Context> {
         b.setCount(r.totalCount());
         b.setStart(TimeEncoding.toProtobufTimestamp(r.start));
         b.setStop(TimeEncoding.toProtobufTimestamp(r.stop));
+        var valueCount = 0;
         for (int i = 0; i < r.valueCount(); i++) {
             b.addEngValues(ValueUtility.toGbp(r.getValue(i)));
             b.addCounts(r.getCount(i));
+            valueCount += r.getCount(i);
         }
+        b.setOtherCount(r.totalCount() - valueCount);
 
         return b.build();
     }
@@ -515,4 +518,30 @@ public class ParameterArchiveApi extends AbstractParameterArchiveApi<Context> {
 
     }
 
+    @Override
+    public void disableBackfilling(Context ctx, DisableBackfillingRequest request, Observer<Empty> observer) {
+        YamcsServerInstance ysi = InstancesApi.verifyInstanceObj(request.getInstance());
+        ctx.checkSystemPrivilege(SystemPrivilege.ControlArchiving);
+
+        getBackFiller(ysi).enableAutomaticBackfilling(false);
+        observer.complete(Empty.getDefaultInstance());
+    }
+
+    @Override
+    public void enableBackfilling(Context ctx, EnableBackfillingRequest request, Observer<Empty> observer) {
+        YamcsServerInstance ysi = InstancesApi.verifyInstanceObj(request.getInstance());
+        ctx.checkSystemPrivilege(SystemPrivilege.ControlArchiving);
+
+        getBackFiller(ysi).enableAutomaticBackfilling(true);
+        observer.complete(Empty.getDefaultInstance());
+    }
+
+    BackFiller getBackFiller(YamcsServerInstance ysi) {
+        var parchive = getParameterArchive(ysi);
+        var backfiller = parchive.getBackFiller();
+        if (backfiller == null) {
+            throw new BadRequestException("Backfiller not enabled");
+        }
+        return backfiller;
+    }
 }

@@ -1,14 +1,11 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
-import { Title } from '@angular/platform-browser';
-import { Router } from '@angular/router';
-import { MessageService, WebappSdkModule, YamcsService } from '@yamcs/webapp-sdk';
+import { BaseComponent, WebappSdkModule, YamcsService } from '@yamcs/webapp-sdk';
 import { InstancePageTemplateComponent } from '../../../shared/instance-page-template/instance-page-template.component';
 import { InstanceToolbarComponent } from '../../../shared/instance-toolbar/instance-toolbar.component';
 import { CreateBandWizardStepComponent } from '../../create-band-wizard-step/create-band-wizard-step.component';
 
 @Component({
-  standalone: true,
   templateUrl: './create-time-ruler.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
@@ -16,20 +13,19 @@ import { CreateBandWizardStepComponent } from '../../create-band-wizard-step/cre
     InstanceToolbarComponent,
     InstancePageTemplateComponent,
     WebappSdkModule,
-  ]
+  ],
 })
-export class CreateTimeRulerComponent {
+export class CreateTimeRulerComponent extends BaseComponent {
 
   form: UntypedFormGroup;
 
   constructor(
-    title: Title,
     formBuilder: UntypedFormBuilder,
     readonly yamcs: YamcsService,
-    private messageService: MessageService,
-    private router: Router,
   ) {
-    title.setTitle('Configure Time Ruler');
+    super();
+    this.setTitle('Configure Time Ruler');
+
     this.form = formBuilder.group({
       name: ['', [Validators.required]],
       description: '',

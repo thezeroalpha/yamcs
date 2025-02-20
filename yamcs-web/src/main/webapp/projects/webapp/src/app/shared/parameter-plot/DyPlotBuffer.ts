@@ -4,7 +4,7 @@ export type WatermarkObserver = () => void;
 
 export type DyValueRange = [number | null, number | null];
 
-export interface PlotData {
+export interface DyPlotData {
   valueRange: DyValueRange;
   samples: DySample[];
 }
@@ -17,7 +17,7 @@ export interface PlotData {
  * and realtime values are connected. Both sets are joined
  * and sorted under all conditions.
  */
-export class PlotBuffer {
+export class DyPlotBuffer {
 
   public dirty = false;
 
@@ -36,7 +36,7 @@ export class PlotBuffer {
   }
 
   setArchiveData(samples: DySample[]) {
-    this.archiveSamples = samples;
+    this.archiveSamples = samples ?? [];
     this.dirty = true;
   }
 
@@ -65,7 +65,7 @@ export class PlotBuffer {
     this.dirty = true;
   }
 
-  snapshot(): PlotData {
+  snapshot(): DyPlotData {
     const realtimeSamples = this.realtimeBuffer.filter(s => s !== undefined) as DySample[];
 
     // Archive sample data contains [null] points for future data (because of empty buckets)

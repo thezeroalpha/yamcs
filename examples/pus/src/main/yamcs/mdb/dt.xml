@@ -1,11 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- we create these types at the root level so we can refer to them from all the subsystems -->
-<SpaceSystem name="dt">
+<SpaceSystem name="dt" xmlns="http://www.omg.org/spec/XTCE/20180204" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.omg.org/spec/XTCE/20180204 https://www.omg.org/spec/XTCE/20180204/SpaceSystem.xsd">
 	<Header validationStatus="Unknown" version="1.0" date="2020-07-01T16:48:10Z" />
 	<TelemetryMetaData>
 		<ParameterTypeSet>
 			<IntegerParameterType signed="false" name="uint4">
 				<IntegerDataEncoding encoding="unsigned" sizeInBits="4" />
+			</IntegerParameterType>
+			<IntegerParameterType signed="false" name="uint5">
+				<IntegerDataEncoding encoding="unsigned" sizeInBits="5" />
 			</IntegerParameterType>
 			<IntegerParameterType signed="false" name="uint8">
 				<IntegerDataEncoding encoding="unsigned" sizeInBits="8" />
@@ -34,6 +38,16 @@
 			<FloatParameterType sizeInBits="32" name="float32">
 				<FloatDataEncoding encoding="IEEE754_1985" sizeInBits="32" />
 			</FloatParameterType>
+			<StringParameterType name="prepended_string">
+				 <StringDataEncoding encoding="UTF-8">
+        			<Variable maxSizeInBits="16000">
+            			<DynamicValue>
+                			<ParameterInstanceRef parameterRef="_yamcs_ignore" />
+            			</DynamicValue>
+           	 			<LeadingSize sizeInBitsOfSizeTag="16" />
+        			</Variable>
+    			</StringDataEncoding>
+			</StringParameterType>
 		</ParameterTypeSet>
 	</TelemetryMetaData>
 	<CommandMetaData>
