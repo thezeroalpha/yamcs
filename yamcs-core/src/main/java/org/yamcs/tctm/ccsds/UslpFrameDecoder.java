@@ -2,6 +2,7 @@ package org.yamcs.tctm.ccsds;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.yamcs.security.SdlsSecurityAssociation;
 import org.yamcs.tctm.ErrorDetectionWordCalculator;
 import org.yamcs.tctm.TcTmException;
 import org.yamcs.tctm.ccsds.DownlinkManagedParameters.FrameErrorDetection;
@@ -135,6 +136,7 @@ public class UslpFrameDecoder implements TransferFrameDecoder {
         utf.setVcFrameSeq(vcfFrameSeq);
         utf.setMapId(mapId);
 
+        SdlsSecurityAssociation sdlsSecurityAssociation = uslpParams.sdlsSecurityAssociations.get(vmp.encryptionSpi);
         byte dataHeader = data[dataOffset];
         int constrRules = dataHeader >> 5;
         int protId = dataHeader & 0x1F;
@@ -153,6 +155,9 @@ public class UslpFrameDecoder implements TransferFrameDecoder {
                 fhp = -1;
             } else {
                 fhp += dataOffset;
+                if (sdlsSecurityAssociation != null)
+                    fhp += SdlsSecurityAssociation.getHeaderSize();
+
                 if (fhp > dataEnd) {
                     throw new TcTmException(
                             "First header pointer in the date header part of USLP frame is outside the data "
@@ -160,6 +165,22 @@ public class UslpFrameDecoder implements TransferFrameDecoder {
                 }
             }
             utf.setFirstHeaderPointer(fhp);
+        }
+
+        if (sdlsSecurityAssociation != null) {
+            int decryptionDataStart = dataOffset;
+
+            decryptionDataStart += SdlsSecurityAssociation.getHeaderSize();
+
+            // order dependency: assume dataEnd already has subtracted size of crc and size of ocf
+            int decryptionTrailerEnd = dataEnd;
+
+            SdlsSecurityAssociation.VerificationStatusCode decryptionResult = sdlsSecurityAssociation.processSecurity(data, offset, decryptionDataStart, decryptionTrailerEnd);
+            if (decryptionResult != SdlsSecurityAssociation.VerificationStatusCode.NoFailure) {
+                log.error("Couldn't decrypt frame: {}", decryptionResult);
+            }
+            dataOffset += SdlsSecurityAssociation.getHeaderSize();
+            dataEnd -= SdlsSecurityAssociation.getTrailerSize();
         }
 
         utf.setDataStart(dataOffset);
