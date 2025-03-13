@@ -5,7 +5,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.yamcs.parameter.BasicParameterValue;
+import org.yamcs.parameter.Value;
 import org.yamcs.parameterarchive.ParameterGroupIdDb.ParameterGroup;
+import org.yamcs.protobuf.Yamcs.Value.Type;
 import org.yamcs.utils.IntArray;
 import org.yamcs.utils.IntHashSet;
 import org.yamcs.utils.TimeEncoding;
@@ -118,7 +120,12 @@ public class PGSegment {
             } else if (pvs.pid > pid2) {
                 // new parameter, we have to shift all existing segments to the right and insert a new segment with gaps
                 // in all positions except pos
-                ParameterValueSegment newPvs = new ParameterValueSegment(pid2, timeSegment, pos, pv);
+                ParameterValueSegment newPvs = newPvs(pid2, timeSegment, type(pv.getEngValue()),
+                        type(pv.getRawValue()));
+                for (int i = 0; i < pos; i++) {
+                    newPvs.insertGap(i);
+                }
+                newPvs.insert(pos, pv);
                 pvSegments.add(idx1, newPvs);
                 if (currentFullGaps != null && !currentFullGaps.remove(pid2)) {
                     // pid2 is part of this segment and was not part of the previous segments
@@ -146,7 +153,12 @@ public class PGSegment {
             BasicParameterValue pv = values.get(idx2);
             var pid2 = pids.get(idx2);
             // new segment to add to the end of the segment list
-            ParameterValueSegment newPvs = new ParameterValueSegment(pid2, timeSegment, pos, pv);
+            ParameterValueSegment newPvs = newPvs(pid2, timeSegment, type(pv.getEngValue()),
+                    type(pv.getRawValue()));
+            for (int i = 0; i < pos; i++) {
+                newPvs.insertGap(i);
+            }
+            newPvs.insert(pos, pv);
             pvSegments.add(newPvs);
             if (currentFullGaps != null && !currentFullGaps.remove(pid2)) {
                 // pid2 is added to this segment but was not part of the previous segments
@@ -154,7 +166,14 @@ public class PGSegment {
             }
             idx2++;
         }
+    }
 
+    private Type type(Value v) {
+        if (v == null) {
+            return null;
+        } else {
+            return v.getType();
+        }
     }
 
     public void consolidate() {
@@ -209,7 +228,6 @@ public class PGSegment {
         } else {
             currentFullGaps = prevSegment.currentFullGaps.clone();
         }
-
         previousFullGaps = new IntHashSet();
         while (idx1 < pvl1.size() && idx2 < pvl2.size()) {
             var pid1 = pvl1.get(idx1).pid;
@@ -220,8 +238,11 @@ public class PGSegment {
                 currentFullGaps.add(pid1);
                 idx1++;
             } else if (pid1 > pid2) {
-                // pid2 not part of the previous segment
-                previousFullGaps.add(pid2);
+                // if pid2 was part of the prevSegment.currentFullGaps, we have to remove it from
+                // this segment currentFullGaps
+                if (!currentFullGaps.remove(pid2)) {
+                    previousFullGaps.add(pid2);
+                } // else pid2 was part of the prevSegment.currentFullGaps so it cannot be part of this segment
                 idx2++;
             } else {
                 // happy case, parameter exists both in the segments and in the new data
@@ -236,10 +257,13 @@ public class PGSegment {
 
             idx1++;
         }
-
         while (idx2 < pvl2.size()) {
             var pid2 = pvl2.get(idx2).pid;
-            previousFullGaps.add(pid2);
+            // if pid2 was part of the prevSegment.currentFullGaps, we have to remove it from
+            // this segment currentFullGaps
+            if (!currentFullGaps.remove(pid2)) {
+                previousFullGaps.add(pid2);
+            } // else pid2 was part of the prevSegment.currentFullGaps so it cannot be part of this segment
             idx2++;
         }
     }
@@ -335,9 +359,15 @@ public class PGSegment {
         }
     }
 
+    ParameterValueSegment newPvs(int pid, SortedTimeSegment timeSegment, Type engValueType,
+            Type rawValueType) {
+        return new ParameterValueSegment(pid, timeSegment, engValueType, rawValueType);
+    }
+
     public String toString() {
         return "PGsegment[groupId: " + parameterGroupId + ", [" + TimeEncoding.toString(getSegmentStart()) + ", "
-                + TimeEncoding.toString(getSegmentEnd()) + "], size: " + size()
+                + TimeEncoding.toString(getSegmentEnd()) + "], num of rows: " + size()
+                + ", num of params: " + pvSegments.size()
                 + ", segmentIdxInsideInterval: " + segmentIdxInsideInterval
                 + ", previousFullGaps: " + previousFullGaps
                 + ", currentFullGaps: " + currentFullGaps
